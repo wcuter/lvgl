@@ -1150,65 +1150,65 @@ static void draw_series_line(lv_obj_t * chart, const lv_area_t * series_area, co
         int32_t y_tmp = (int32_t)((int32_t)ser->points[p_prev] - ext->ymin[ser->y_axis]) * h;
         y_tmp  = y_tmp / (ext->ymax[ser->y_axis] - ext->ymin[ser->y_axis]);
         p2.y   = h - y_tmp + y_ofs;
+        if ( ext->point_cnt > 1 ){ //check that there are at least 2 points
+            for(i = 0; i < ext->point_cnt; i++) {
+                p1.x = p2.x;
+                p1.y = p2.y;
 
-        for(i = 0; i < ext->point_cnt; i++) {
-            p1.x = p2.x;
-            p1.y = p2.y;
+                p2.x = ((w * i) / (ext->point_cnt - 1)) + x_ofs;
 
-            p2.x = ((w * i) / (ext->point_cnt - 1)) + x_ofs;
+                p_act = (start_point + i) % ext->point_cnt;
 
-            p_act = (start_point + i) % ext->point_cnt;
+                y_tmp = (int32_t)((int32_t)ser->points[p_act] - ext->ymin[ser->y_axis]) * h;
+                y_tmp = y_tmp / (ext->ymax[ser->y_axis] - ext->ymin[ser->y_axis]);
+                p2.y  = h - y_tmp + y_ofs;
 
-            y_tmp = (int32_t)((int32_t)ser->points[p_act] - ext->ymin[ser->y_axis]) * h;
-            y_tmp = y_tmp / (ext->ymax[ser->y_axis] - ext->ymin[ser->y_axis]);
-            p2.y  = h - y_tmp + y_ofs;
+                /*Don't draw the first point. A second point is also required to draw the line*/
+                if(i != 0 && ser->points[p_prev] != LV_CHART_POINT_DEF && ser->points[p_act] != LV_CHART_POINT_DEF) {
+                    lv_draw_line(&p1, &p2, &series_mask, &line_dsc);
 
-            /*Don't draw the first point. A second point is also required to draw the line*/
-            if(i != 0 && ser->points[p_prev] != LV_CHART_POINT_DEF && ser->points[p_act] != LV_CHART_POINT_DEF) {
-                lv_draw_line(&p1, &p2, &series_mask, &line_dsc);
+                    lv_coord_t y_top = LV_MATH_MIN(p1.y, p2.y);
+                    if(has_area && y_top <= clip_area->y2) {
+                        int16_t mask_line_id;
+                        lv_draw_mask_line_param_t mask_line_p;
+                        lv_draw_mask_line_points_init(&mask_line_p, p1.x, p1.y, p2.x, p2.y, LV_DRAW_MASK_LINE_SIDE_BOTTOM);
+                        mask_line_id = lv_draw_mask_add(&mask_line_p, NULL);
 
-                lv_coord_t y_top = LV_MATH_MIN(p1.y, p2.y);
-                if(has_area && y_top <= clip_area->y2) {
-                    int16_t mask_line_id;
-                    lv_draw_mask_line_param_t mask_line_p;
-                    lv_draw_mask_line_points_init(&mask_line_p, p1.x, p1.y, p2.x, p2.y, LV_DRAW_MASK_LINE_SIDE_BOTTOM);
-                    mask_line_id = lv_draw_mask_add(&mask_line_p, NULL);
+                        lv_area_t a;
+                        a.x1 = p1.x;
+                        a.x2 = p2.x - 1;
+                        a.y1 = y_top;
+                        a.y2 = series_area->y2;
 
-                    lv_area_t a;
-                    a.x1 = p1.x;
-                    a.x2 = p2.x - 1;
-                    a.y1 = y_top;
-                    a.y2 = series_area->y2;
+                        if(has_fade) mask_fade_id = lv_draw_mask_add(&mask_fade_p, NULL);
 
-                    if(has_fade) mask_fade_id = lv_draw_mask_add(&mask_fade_p, NULL);
+                        lv_draw_rect(&a, &series_mask, &area_dsc);
 
-                    lv_draw_rect(&a, &series_mask, &area_dsc);
-
-                    lv_draw_mask_remove_id(mask_line_id);
-                    lv_draw_mask_remove_id(mask_fade_id);
+                        lv_draw_mask_remove_id(mask_line_id);
+                        lv_draw_mask_remove_id(mask_fade_id);
+                    }
                 }
-            }
 
-            if(point_radius) {
-                lv_area_t point_area;
+                if(point_radius) {
+                    lv_area_t point_area;
 
-                point_area.x1 = p1.x;
-                point_area.x2 = point_area.x1 + point_radius;
-                point_area.x1 -= point_radius;
+                    point_area.x1 = p1.x;
+                    point_area.x2 = point_area.x1 + point_radius;
+                    point_area.x1 -= point_radius;
 
-                point_area.y1 = p1.y;
-                point_area.y2 = point_area.y1 + point_radius;
-                point_area.y1 -= point_radius;
+                    point_area.y1 = p1.y;
+                    point_area.y2 = point_area.y1 + point_radius;
+                    point_area.y1 -= point_radius;
 
-                if(ser->points[p_act] != LV_CHART_POINT_DEF) {
-                    /*Don't limit to `series_mask` to get full circles on the ends*/
-                    lv_draw_rect(&point_area, clip_area, &point_dsc);
+                    if(ser->points[p_act] != LV_CHART_POINT_DEF) {
+                        /*Don't limit to `series_mask` to get full circles on the ends*/
+                        lv_draw_rect(&point_area, clip_area, &point_dsc);
+                    }
                 }
-            }
 
-            p_prev = p_act;
+                p_prev = p_act;
+            }
         }
-
         /*Draw the last point*/
         if(point_radius) {
             lv_area_t point_area;
